@@ -30,8 +30,6 @@ void signalHandler(int sig){
     switch (sig){
         case SIGINT:
         case SIGTERM:
-            pthread_cancel(pthServerChild);
-            pthread_join(pthServerChild, NULL);
             pthread_cancel(pthServer);
             pthread_cancel(pthSerial);
             serverThread_closeResources();

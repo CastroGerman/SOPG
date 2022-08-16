@@ -5,6 +5,10 @@
 #include <sys/socket.h>
 #include "sharedResources.h"
 
+void serialThread_closeResources(void){
+    serial_close();
+}
+
 void* serialThread(void *){
     printf("Comienza hilo de comunicacion serial\n");
     char serialBuffer[SERIAL_BUFFER_SIZE];

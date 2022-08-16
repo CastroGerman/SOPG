@@ -3,6 +3,8 @@
     "files.associations": {
         "errno.h": "c",
         "stdlib.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "tserial.h": "c",
+        "sharedresources.h": "c"
     }
 }

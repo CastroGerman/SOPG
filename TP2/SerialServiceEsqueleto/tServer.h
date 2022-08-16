@@ -6,7 +6,7 @@
 #define SOCKET_BUFFER_SIZE 200
 
 void *serverThread(void *args);
-int tcpConnHandler(int connFd);
-void *clientThread(void *args);
-
+void clientThread(void);
+void serverThread_closeResources(void);
+void clientThread_closeResources(void);
 #endif

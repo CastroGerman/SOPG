@@ -30,9 +30,13 @@ void signalHandler(int sig){
     switch (sig){
         case SIGINT:
         case SIGTERM:
-            pthread_kill(pthServerChild, SIGKILL);
-            pthread_kill(pthServer, SIGKILL);
-            pthread_kill(pthSerial, SIGKILL);
+            pthread_cancel(pthServerChild);
+            pthread_join(pthServerChild, NULL);
+            pthread_cancel(pthServer);
+            pthread_cancel(pthSerial);
+            serverThread_closeResources();
+            clientThread_closeResources();
+            serialThread_closeResources();
             break;
         default:
             break;
@@ -44,13 +48,18 @@ void registerSignals(void){
     sa.sa_handler = &signalHandler;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        printf("Error al registrar SIGINT\n");
+    }
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        printf("Error al registrar SIGTERM\n");
+    }
 }
 
 int main(void){
     int retPthServer = -1, retPthSerial = -1;
-    
+    registerSignals();
+
     signalBlock();
     retPthServer = pthread_create(&pthServer, NULL, serverThread, NULL);
     if (retPthServer != 0) {
@@ -63,8 +72,8 @@ int main(void){
         exit(EXIT_FAILURE);
     }
     signalUnlock();
-
-    pthread_join(pthServer, NULL);    
+ 
+    pthread_join(pthServer, NULL);   
     pthread_join(pthSerial, NULL);        
 	exit(EXIT_SUCCESS);
 }

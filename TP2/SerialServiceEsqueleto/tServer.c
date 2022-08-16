@@ -10,9 +10,19 @@
 #include "SerialManager.h"
 #include "sharedResources.h"
 
+static int sockFd = 0;
+void serverThread_closeResources(void){
+    if (sockFd != 0) close(sockFd);
+}
+
+static int connFd = 0;
+void clientThread_closeResources(void){
+    if (connFd != 0) close(connFd);
+}
+
 void *serverThread(void *args){
     printf("Comienza hilo de TCP server\n");
-    int sockFd = 0, addrLen = 0;
+    int addrLen = 0;
     struct sockaddr_in servAddr, cliAddr;
     bzero(&servAddr, sizeof(struct sockaddr_in));
     bzero(&cliAddr, sizeof(struct sockaddr_in));
@@ -38,9 +48,9 @@ void *serverThread(void *args){
     }
     
     while (1) {
-        int * connFd = (int *)malloc(sizeof(int));
+        connFd = 0;
         addrLen = sizeof(struct sockaddr_in);
-        if ((*connFd = accept(sockFd, (struct sockaddr *)&cliAddr, &addrLen)) == -1) {
+        if ((connFd = accept(sockFd, (struct sockaddr *)&cliAddr, &addrLen)) == -1) {
             printf("Error al intentar conectarse al puerto.\n");
             exit(EXIT_FAILURE);
         }
@@ -49,24 +59,17 @@ void *serverThread(void *args){
         inet_ntop(AF_INET, &cliAddr.sin_addr, ipClient, sizeof(ipClient));
         printf("Se recibió una conexión desde: %s : %d\n", ipClient, cliAddr.sin_port);
 
-        pthread_t pthClient;
-        int retPthClient = -1;    
-        retPthClient = pthread_create(&pthClient, NULL, clientThread, connFd);
-        if (retPthClient != 0) {
-            printf("Error al crear thread de cliente TCP\n");
-        }
+
+        clientThread();
     }
     close(sockFd);
     exit(EXIT_SUCCESS);
 }
 
-void *clientThread(void *args){
-    pthread_detach(pthread_self());
-    int connFd = *(int *)args;
+void clientThread(void){
     pthread_mutex_lock(&mutex);
-    clientFd = *(int *)args;
+    clientFd = connFd;
     pthread_mutex_unlock(&mutex);
-    free(args);
     printf("Comienza hilo de TCP client con file descriptor = %d\n", connFd);
 
     char socketBuffer[SOCKET_BUFFER_SIZE];
@@ -77,7 +80,7 @@ void *clientThread(void *args){
         if ((bytesRead = read(connFd, socketBuffer, SOCKET_BUFFER_SIZE - 1)) <= 0) {
             printf("Error al leer mensaje del socket\n");
             close(connFd);
-            pthread_exit(NULL);
+            return;
         }
         socketBuffer[bytesRead] = '\0';
         printf("SERVER -- Se leyeron %d bytes: %s\n", bytesRead, socketBuffer);
